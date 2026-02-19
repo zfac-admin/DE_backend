@@ -73,6 +73,17 @@ class Material(Base):
     quantity = Column(Integer)
     account_idx = Column(Integer)
 
+class MaterialPlan(Base):
+    __tablename__ = "material_plans"
+
+    plan_idx = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    year = Column(Integer)
+    month = Column(Integer)
+    business_plan = Column(Float)
+    business_amount = Column(Float)
+    business_achievement_rate = Column(Float)
+    account_idx = Column(Integer, default=1)
+
 class MaterialInven(Base):
     __tablename__ = "material_invens"
 

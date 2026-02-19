@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models import Plan, Production, InventoryManagement, Material, MaterialInven, MaterialInOutManagement, MaterialInvenManagement
+from models import Plan, Production, InventoryManagement, Material, MaterialPlan, MaterialInven, MaterialInOutManagement, MaterialInvenManagement
 import schemas
 from sqlalchemy import extract, func, desc
 from typing import List
@@ -356,33 +356,22 @@ def delete_material(db: Session, material_id: int):
     return material
 
 def get_material_rate_for_year(db: Session, year: int) -> List[schemas.MaterialResponse2]:
+    plans = db.query(MaterialPlan).filter(MaterialPlan.year == year).order_by(MaterialPlan.month).all()    
     materials_for_year = []
-
-    for month in range(1, 13):
-        start_date, end_date = get_month_range(year, month)
-        business_plan = db.query(func.sum(Material.quantity * MaterialInven.price))\
-            .select_from(MaterialInven)\
-            .join(Material, Material.item_name == MaterialInven.item_name)\
-            .filter(Material.date.between(start_date.date(), end_date.date()))\
-            .scalar() or 0
-        business_amount = db.query(func.sum(MaterialInven.overall_status_quantity * MaterialInven.price))\
-            .filter(MaterialInven.date.between(start_date.date(), end_date.date()))\
-            .scalar() or 0
-        business_achievement_rate = round((business_amount / business_plan) * 100 if business_plan > 0 else 0, 2)
-
+    for plan in plans:
         monthly_plan = schemas.MaterialResponse2(
-            year=year,
-            month=month,
-            business_plan=business_plan,
-            business_amount=business_amount,
-            business_achievement_rate=business_achievement_rate
+            year=plan.year,
+            month=plan.month,
+            business_plan=plan.business_plan,
+            business_amount=plan.business_amount,
+            business_achievement_rate=plan.business_achievement_rate
         )
         materials_for_year.append(monthly_plan)
+        
     return materials_for_year
 
 #월별 material 상승률
 def get_material_rate_for_month(db: Session, year: int, month: int):
-
     current_start_date = datetime(year, month, 1)
     next_month = month % 12 + 1
     current_end_date = datetime(year, next_month, 1) - timedelta(days=1)

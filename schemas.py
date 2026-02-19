@@ -67,8 +67,8 @@ class ProductionCreate(BaseModel):
     produced_quantity: int
     production_efficiency: int
     process: str
-    operating_time: time
-    non_operating_time: time
+    operating_time: Optional[time] = None
+    non_operating_time: Optional[time] = None
     shift: str
     line_efficiency: int
     specification: str

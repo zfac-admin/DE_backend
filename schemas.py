@@ -364,3 +364,15 @@ class MaterialInvenManagementUpdate(BaseModel):
 
     class Config:
         orm_mode = True
+
+class MassProductionInput(BaseModel):
+    daily_out: int
+    capa: int
+    delivery_date: str
+    stock_finished: int
+    stock_wip: int
+    stock_part1: int
+    order_vol: int
+    lead_time_part1: int
+    method: str
+    forecast_months: int

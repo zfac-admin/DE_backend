@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models import Plan, Production, InventoryManagement, Material, MaterialPlan, MaterialInven, MaterialInOutManagement, MaterialInvenManagement
+from models import Plan, Production, InventoryManagement, Material, MaterialPlan, MaterialInven, MaterialInOutManagement, MaterialInvenManagement, ProductionPlanSummary
 import schemas
 from sqlalchemy import extract, func, desc
 from typing import List
@@ -39,32 +39,36 @@ def get_all_plans(db: Session):
 
 #연도별 plan rate 데이터
 def get_plans_rate_for_year(db: Session, year: int) -> List[schemas.PlanResponse]:
+    summaries = db.query(ProductionPlanSummary).filter(ProductionPlanSummary.year == year).all()
+    summary_dict = {s.month: s for s in summaries}
     plans_for_year = []
 
     for month in range(1, 13):
-        start_date, end_date = get_month_range(year, month)
-        prod_plan = db.query(func.sum(Plan.inventory)).filter(Plan.year == year, Plan.month == month).scalar() or 0
-        business_plan = db.query(func.sum(Plan.inventory * Plan.price)).filter(Plan.year == year, Plan.month == month).scalar() or 0
-        prod_amount = db.query(func.sum(Production.produced_quantity)).filter(Production.date.between(start_date.date(), end_date.date())).scalar() or 0
-        business_amount = db.query(func.sum(Production.produced_quantity * Plan.price))\
-            .select_from(Production)\
-            .join(Plan, Plan.item_name == Production.item_name)\
-            .filter(Production.date.between(start_date.date(), end_date.date()))\
-            .scalar() or 0
-        production_achievement_rate = round((prod_amount / prod_plan) * 100 if prod_plan > 0 else 0, 2)
-        business_achievement_rate = round((business_amount / business_plan) * 100 if business_plan > 0 else 0, 2)
-        
-        monthly_plan = schemas.PlanResponse(
-            year=year,
-            month=month,
-            prod_plan=prod_plan,
-            business_plan=business_plan,
-            prod_amount=prod_amount,
-            business_amount=business_amount,
-            production_achievement_rate=production_achievement_rate,
-            business_achievement_rate=business_achievement_rate
-        )
+        s = summary_dict.get(month)
+        if s:
+            monthly_plan = schemas.PlanResponse(
+                year=s.year,
+                month=s.month,
+                prod_plan=s.prod_plan,
+                business_plan=s.business_plan,
+                prod_amount=s.prod_amount,
+                business_amount=s.business_amount,
+                production_achievement_rate=s.prod_achievement_rate,
+                business_achievement_rate=s.business_achievement_rate
+            )
+        else:
+            monthly_plan = schemas.PlanResponse(
+                year=year,
+                month=month,
+                prod_plan=0,
+                business_plan=0,
+                prod_amount=0,
+                business_amount=0,
+                production_achievement_rate=0,
+                business_achievement_rate=0
+            )
         plans_for_year.append(monthly_plan)
+
     return plans_for_year
 
 #월별 plan 상승률
@@ -541,3 +545,36 @@ def delete_material_invens(db: Session, inventory_id: int):
     db.delete(inventory)
     db.commit()
     return inventory
+
+#  Production을 월별로 집계하여 딕셔너리로 반환
+def get_history_for_order_volume(db: Session):
+    data = db.query(Production).all()
+    if not data:
+        return {}
+        
+    df = pd.DataFrame([{
+        'date': p.date,
+        'quantity': p.produced_quantity
+    } for p in data])
+    
+    df['date'] = pd.to_datetime(df['date'])
+    df_monthly = df.resample('ME', on='date').sum().reset_index()
+    
+    return {row['date'].strftime('%Y-%m'): int(row['quantity']) for _, row in df_monthly.iterrows()}
+
+# InventoryManagement를 월별로 집계하여 딕셔너리로 반환
+def get_history_for_safety_stock(db: Session):
+    data = db.query(InventoryManagement).all()
+    if not data:
+        return {}
+        
+    df = pd.DataFrame([{
+        'date': inv.date,
+        'quantity': inv.current_quantity
+    } for inv in data])
+    
+    df['date'] = pd.to_datetime(df['date'])
+    df_monthly = df.resample('ME', on='date').last().reset_index() 
+    df_monthly['quantity'] = df_monthly['quantity'].ffill().fillna(0)
+
+    return {row['date'].strftime('%Y-%m'): int(row['quantity']) for _, row in df_monthly.iterrows()}

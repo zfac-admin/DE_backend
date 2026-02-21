@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 import crud, schemas, datetime
 from database import get_db
 from typing import List
+import forecasting
+import math
 
 app = FastAPI()
 @app.get("/")
@@ -239,3 +241,44 @@ def delete_material_invens(inventory_id: int, db: Session = Depends(get_db)):
     if not deleted_inventory:
         raise HTTPException(status_code=404, detail="Inventory not found")
     return {"detail": "Inventory deleted"}
+
+# prediction 엔드포인트
+@app.post("/predictions/mass_production")
+def predict_mass_production(data: schemas.MassProductionInput, db: Session = Depends(get_db)):
+    raw_order_volume = crud.get_history_for_order_volume(db)
+    raw_safety_stock = crud.get_history_for_safety_stock(db)
+
+    dates = sorted(list(raw_order_volume.keys()))[-12:] if raw_order_volume else []
+    
+    if not dates:
+        dates = ["2026-01", "2026-02"]
+        historical_order_volume = {d: data.order_vol for d in dates}
+        historical_safety_stock = {d: data.stock_finished for d in dates}
+    else:
+        historical_order_volume = {d: raw_order_volume[d] for d in dates}
+        historical_safety_stock = {d: raw_safety_stock.get(d, 0) for d in dates}
+
+    historical_lead_time = {d: data.lead_time_part1 for d in dates}
+
+    pred_order = forecasting.calculate_forecast(historical_order_volume, data.method, data.forecast_months)
+    pred_lead = forecasting.calculate_forecast(historical_lead_time, data.method, data.forecast_months)
+
+    order_values = list(historical_order_volume.values())
+    if len(order_values) > 1:
+        avg_order = sum(order_values) / len(order_values)
+        variance = sum((x - avg_order) ** 2 for x in order_values) / (len(order_values) - 1)
+        std_dev = math.sqrt(variance)
+    else:
+        std_dev = 0
+
+    Z_SCORE = 1.65
+    pred_safety = {}
+    for date in pred_order.keys():
+        lt = max(1, pred_lead.get(date, 1))
+        pred_safety[date] = int(Z_SCORE * std_dev * math.sqrt(lt))
+
+    return {
+        "order_volume": {"history": historical_order_volume, "prediction": pred_order},
+        "lead_time": {"history": historical_lead_time, "prediction": pred_lead},
+        "safety_stock": {"history": historical_safety_stock, "prediction": pred_safety}
+    }

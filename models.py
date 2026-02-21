@@ -138,3 +138,17 @@ class MaterialInvenManagement(Base):
     lot_current_quantity = Column(Integer)
     difference_quantity = Column(Integer)
     account_idx = Column(Integer)
+
+class ProductionPlanSummary(Base):
+    __tablename__ = "production_plan_summaries"
+
+    summary_idx = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    year = Column(Integer, index=True)
+    month = Column(Integer)
+    prod_plan = Column(Float, default=0.0)
+    prod_amount = Column(Float, default=0.0)
+    prod_achievement_rate = Column(Float, default=0.0)
+    business_plan = Column(Float, default=0.0)
+    business_amount = Column(Float, default=0.0)
+    business_achievement_rate = Column(Float, default=0.0)
+    account_idx = Column(Integer, default=1)

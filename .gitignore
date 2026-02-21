@@ -2,3 +2,6 @@
 __pycache__/
 downloads/
 *.pyc
+
+data_generator.py
+delete_dummy.py

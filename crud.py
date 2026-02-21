@@ -182,20 +182,6 @@ def get_production_efficiency_for_year(db: Session, year: int) -> List[schemas.P
         plans_for_year.append(monthly_plan)
     return plans_for_year
 
-def predict_production(db: Session, forecast_months: int):
-    data = db.query(Production).all()
-    df = pd.DataFrame([{
-        'date': production.date,
-        'produced_quantity': production.produced_quantity
-    } for production in data])
-    df['date'] = pd.to_datetime(df['date'])
-    df_monthly = df.resample('M', on='date').sum().reset_index()
-    model = ExponentialSmoothing(df_monthly['produced_quantity'], trend='add', seasonal=None).fit()
-    forecast = model.forecast(steps=forecast_months)
-    forecast_dates = pd.date_range(start=df_monthly['date'].iloc[-1] + pd.DateOffset(months=1), periods=forecast_months, freq='M')
-    forecast_result = [{"date": date.strftime('%Y-%m'), "month_quantity": value} for date, value in zip(forecast_dates, forecast)]
-    return forecast_result
-
 #production전체
 def get_all_productions(db: Session):
     production_get = db.query(Production).all()
@@ -506,20 +492,6 @@ def get_all_material_invens(db: Session):
 def get_month_material_invens(db: Session, year: int, month: int):
     material_invens_get = db.query(MaterialInvenManagement).filter(extract('year', MaterialInvenManagement.date) == year, extract('month', MaterialInvenManagement.date) == month).order_by(desc(MaterialInvenManagement.materialinvenmanage_idx)).all()
     return [material_invens.__dict__ for material_invens in material_invens_get]
-
-def get_predict_material_invens(db: Session, forecast_months: int):
-    data = db.query(MaterialInvenManagement).all()
-    df = pd.DataFrame([{
-        'date': material_invens.date,
-        'in_amount': material_invens.in_amount
-    } for material_invens in data])
-    df['date'] = pd.to_datetime(df['date'])
-    df_monthly = df.resample('M', on='date').sum().reset_index()
-    model = ExponentialSmoothing(df_monthly['in_amount'], trend='add', seasonal=None).fit()
-    forecast = model.forecast(steps=forecast_months)
-    forecast_dates = pd.date_range(start=df_monthly['date'].iloc[-1] + pd.DateOffset(months=1), periods=forecast_months, freq='M')
-    forecast_result = [{"date": date.strftime('%Y-%m'), "month_amount": value} for date, value in zip(forecast_dates, forecast)]
-    return forecast_result
 
 #material_inven_management Update
 def update_material_invens(db: Session, inventory_id: int, inventory_update: schemas.MaterialInvenManagementUpdate):

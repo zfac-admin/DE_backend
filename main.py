@@ -85,13 +85,6 @@ def get_production(production_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Production not found")
     return production.__dict__
 
-@app.get("/productions/predict/")
-def get_production_forecast(forecast_months: int, db: Session = Depends(get_db)):
-    forecast = crud.predict_production(db, forecast_months)
-    if not forecast:
-        raise HTTPException(status_code=404, detail="Forecast not found")
-    return {"forecast_months": forecast_months, "predicted_productions": forecast}
-
 @app.put("/productions/{production_id}", response_model=schemas.ProductionUpdate)
 def update_production(production_id: int, productions_update: schemas.ProductionUpdate, db: Session = Depends(get_db)):
     updated_productions = crud.update_production(db, production_id, productions_update)
@@ -220,13 +213,6 @@ def get_material_inventories(inventory_id: int, db: Session = Depends(get_db)):
 def get_month_material_inventories(year: int, month: int, db: Session = Depends(get_db)):
     inventory = crud.get_month_material_invens(db, year, month)
     return inventory
-
-@app.get("/material_invens/predict/")
-def get_material_invens_forecast(forecast_months: int, db: Session = Depends(get_db)):
-    forecast = crud.get_predict_material_invens(db, forecast_months)
-    if not forecast:
-        raise HTTPException(status_code=404, detail="Forecast not found")
-    return {"forecast_months": forecast_months, "predicted_material_invens": forecast}
 
 @app.put("/material_invens/{inventory_id}", response_model=schemas.MaterialInvenManagementUpdate)
 def update_material_invens(inventory_id: int, inventory_update: schemas.MaterialInvenManagementUpdate, db: Session = Depends(get_db)):

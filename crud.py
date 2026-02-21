@@ -530,7 +530,7 @@ def get_history_for_order_volume(db: Session):
     } for p in data])
     
     df['date'] = pd.to_datetime(df['date'])
-    df_monthly = df.resample('ME', on='date').sum().reset_index()
+    df_monthly = df.resample('M', on='date').sum().reset_index()
     
     return {row['date'].strftime('%Y-%m'): int(row['quantity']) for _, row in df_monthly.iterrows()}
 
@@ -546,7 +546,7 @@ def get_history_for_safety_stock(db: Session):
     } for inv in data])
     
     df['date'] = pd.to_datetime(df['date'])
-    df_monthly = df.resample('ME', on='date').last().reset_index() 
+    df_monthly = df.resample('M', on='date').last().reset_index() 
     df_monthly['quantity'] = df_monthly['quantity'].ffill().fillna(0)
 
     return {row['date'].strftime('%Y-%m'): int(row['quantity']) for _, row in df_monthly.iterrows()}

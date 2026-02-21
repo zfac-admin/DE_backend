@@ -50,3 +50,31 @@ def calculate_forecast(history_dict: dict, method: str, forecast_months: int):
     }
     
     return result_dict
+
+# 과거 및 예측 데이터를 분석하여 간단한 코멘트를 생성: 추세 분석, 수치 요약, 코멘트.
+def generate_analysis_comment(df_history, df_pred, value_name, unit):
+    if df_pred is None or df_pred.empty:
+        return "예측 결과가 없습니다."
+
+    pred_values = df_pred.iloc[0].tolist()
+
+    trend = ""
+    if pred_values[-1] > pred_values[0]:
+        trend = "증가 추세"
+        trend_icon = "📈"
+    elif pred_values[-1] < pred_values[0]:
+        trend = "감소 추세"
+        trend_icon = "📉"
+    else:
+        trend = "보합세 유지"
+        trend_icon = "➡️"
+
+    avg_pred = int(sum(pred_values) / len(pred_values))
+    max_pred = int(max(pred_values))
+
+    comment = f"""
+    - **{trend_icon} 향후 전망:** {trend}가 예상됩니다.
+    - **평균 예측:** 약 **{avg_pred:,} {unit}**
+    - **최대 예상:** 약 **{max_pred:,} {unit}**
+    """
+    return comment

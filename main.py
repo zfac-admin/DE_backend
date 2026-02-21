@@ -1,10 +1,10 @@
-
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 import crud, schemas, datetime
 from database import get_db
 from typing import List
 import forecasting
+import pandas as pd
 import math
 
 app = FastAPI()
@@ -263,8 +263,21 @@ def predict_mass_production(data: schemas.MassProductionInput, db: Session = Dep
         lt = max(1, pred_lead.get(date, 1))
         pred_safety[date] = int(Z_SCORE * std_dev * math.sqrt(lt))
 
+    df_order_hist = pd.DataFrame([historical_order_volume])
+    df_order_pred = pd.DataFrame([pred_order])
+    comment_order = forecasting.generate_analysis_comment(df_order_hist, df_order_pred, "주문량", "개")
+
+    df_lead_hist = pd.DataFrame([historical_lead_time])
+    df_lead_pred = pd.DataFrame([pred_lead])
+    comment_lead = forecasting.generate_analysis_comment(df_lead_hist, df_lead_pred, "리드타임", "일")
+    
+    df_safe_hist = pd.DataFrame([historical_safety_stock])
+    df_safe_pred = pd.DataFrame([pred_safety])
+    comment_safety = forecasting.generate_analysis_comment(df_safe_hist, df_safe_pred, "안전재고", "개")
+
     return {
         "order_volume": {"history": historical_order_volume, "prediction": pred_order},
         "lead_time": {"history": historical_lead_time, "prediction": pred_lead},
-        "safety_stock": {"history": historical_safety_stock, "prediction": pred_safety}
+        "safety_stock": {"history": historical_safety_stock, "prediction": pred_safety},
+        "analysis_comments": {"order": comment_order, "lead": comment_lead, "safety": comment_safety}
     }

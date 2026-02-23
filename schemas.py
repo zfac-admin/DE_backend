@@ -20,6 +20,7 @@ class PlanBase(BaseModel):
     item_number: str
     item_name: str
     inventory: int
+    current_inventory: int = 0
     model: str
     process: str
     price: float
@@ -376,3 +377,13 @@ class MassProductionInput(BaseModel):
     lead_time_part1: int
     method: str
     forecast_months: int
+
+class FacilityStatusBase(BaseModel):
+    date: date
+    line: str
+    produced_quantity: float
+    operating_time: float
+    non_operating_time: float
+
+    class Config:
+        from_attributes = True

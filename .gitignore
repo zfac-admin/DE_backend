@@ -5,3 +5,5 @@ downloads/
 
 data_generator.py
 delete_dummy.py
+update_dummy_plans.py
+reset_table.py

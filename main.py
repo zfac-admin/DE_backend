@@ -281,3 +281,7 @@ def predict_mass_production(data: schemas.MassProductionInput, db: Session = Dep
         "safety_stock": {"history": historical_safety_stock, "prediction": pred_safety},
         "analysis_comments": {"order": comment_order, "lead": comment_lead, "safety": comment_safety}
     }
+
+@app.get("/facility_status/{target_date}", response_model=List[schemas.FacilityStatusBase])
+def get_facility_status(target_date: datetime.date, db: Session = Depends(get_db)):
+    return crud.get_facility_status_by_date(db, target_date)

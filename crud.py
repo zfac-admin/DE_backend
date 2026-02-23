@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models import Plan, Production, InventoryManagement, Material, MaterialPlan, MaterialInven, MaterialInOutManagement, MaterialInvenManagement, ProductionPlanSummary
+from models import Plan, Production, InventoryManagement, Material, MaterialPlan, MaterialInven, MaterialInOutManagement, MaterialInvenManagement, ProductionPlanSummary, FacilityStatus
 import schemas
 from sqlalchemy import extract, func, desc
 from typing import List
@@ -550,3 +550,7 @@ def get_history_for_safety_stock(db: Session):
     df_monthly['quantity'] = df_monthly['quantity'].ffill().fillna(0)
 
     return {row['date'].strftime('%Y-%m'): int(row['quantity']) for _, row in df_monthly.iterrows()}
+
+def get_facility_status_by_date(db: Session, target_date: datetime.date):
+    data = db.query(FacilityStatus).filter(FacilityStatus.date == target_date).all()
+    return [d.__dict__ for d in data]

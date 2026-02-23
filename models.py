@@ -10,6 +10,7 @@ class Plan(Base):
     item_number = Column(String(100))
     item_name = Column(String(100))
     inventory = Column(Integer)
+    current_inventory = Column(Integer, default=0)
     model = Column(String(100))
     process = Column(String(100))
     price = Column(Float)
@@ -152,3 +153,12 @@ class ProductionPlanSummary(Base):
     business_amount = Column(Float, default=0.0)
     business_achievement_rate = Column(Float, default=0.0)
     account_idx = Column(Integer, default=1)
+
+class FacilityStatus(Base):
+    __tablename__ = "facility_status"
+    status_idx = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    date = Column(Date, index=True)
+    line = Column(String(50))
+    produced_quantity = Column(Float, default=0.0)
+    operating_time = Column(Float, default=0.0)
+    non_operating_time = Column(Float, default=0.0)
